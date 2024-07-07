@@ -2,7 +2,7 @@
 
 git_address="https://github.com/iamrigo/sqlar.git"
 dir_address="/home/sqlar"
-
+version="1.1.0"
 # Define colors and Helper functions for colored messages
 colors=( "\033[1;31m" "\033[1;35m" "\033[1;92m" "\033[38;5;46m" "\033[1;38;5;208m" "\033[1;36m" "\033[0m" )
 red=${colors[0]} pink=${colors[1]} green=${colors[2]} spring=${colors[3]} orange=${colors[4]} cyan=${colors[5]} reset=${colors[6]}
@@ -59,7 +59,7 @@ check_needs() {
 menu() {
     clear
     print "\n\t Welcome to Sqlar!"
-    print "\t\t version 1.0.0 develop by @ErfJab (telegram & github)"
+    print "\t\t version $version develop by @ErfJab (telegram & github)"
     print "—————————————————————————————————————————————————————————————————————————"
     print "1) Install bot"
     print "2) Uninstall bot"
