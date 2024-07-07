@@ -137,7 +137,7 @@ get_language() {
     success "Selected language: $language"
 }
 
-setup_and_run_bot() {
+complete_install() {
     log "Downloading the project from GitHub..."
     git clone $git_address $dir_address
     if [ $? -ne 0 ]; then
@@ -192,10 +192,14 @@ uninstall_bot() {
 
     deactivate 2>/dev/null
 
-    if pgrep -f "nohup python3 $dir_address/sqlar.py" > /dev/null; then
-        kill $(pgrep -f "nohup python3 /home/sqlar/sqlar.py")
-        success "Bot process killed."
-    fi
+    processes=("python3 /home/sqlar.py")
+    for proc in "${processes[@]}"; do
+        if pgrep -f "$proc" &> /dev/null; then
+            proc_name=$(echo "$proc" | cut -d ' ' -f 2)
+            echo -e "Stopping existing $proc_name process...\n"
+            pkill -fx "$proc"
+        fi
+    done
 
     if [ -d "sqlar" ]; then
         rm -rf sqlar
