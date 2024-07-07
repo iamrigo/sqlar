@@ -1,0 +1,20 @@
+{
+    "EN": {
+        "START": "Hi, welcome to sqlar.",
+        "BLOCK": "You can't use bot.",
+        "SUCCESS_NO_MESSAGE": "Query executed successfully, no results to show.",
+        "ERROR": "An error occurred:"
+    },
+    "PR": {
+        "START": "درود، به اسکولار خوش آمدید.",
+        "BLOCK": "شما نمیتوانید از ربات استفاده کنید.",
+        "SUCCESS_NO_MESSAGE": "دستور با موفقیت اجرا شد.\nچیزی برای نمایش نداریم.",
+        "ERROR": "یه اروری داریم:"
+    },
+    "RU": {
+        "START": "Привет, добро пожаловать в sqlar.",
+        "BLOCK": "Вы не можете использовать бота.",
+        "SUCCESS_NO_MESSAGE": "Запрос успешно выполнен, нет результатов для отображения.",
+        "ERROR": "Произошла ошибка:"
+    }
+}
