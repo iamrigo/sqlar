@@ -7,7 +7,7 @@ py_address="/root/sqlar/sqlar.py"
 env_address="/root/sqlar/.env"
 venv_name="sqlar"
 marzban_env_file="/opt/marzban/.env"
-version="1.1.1"
+version="1.1.2"
 
 # Define colors and Helper functions for colored messages
 colors=( "\033[1;31m" "\033[1;35m" "\033[1;92m" "\033[38;5;46m" "\033[1;38;5;208m" "\033[1;36m" "\033[0m" )
@@ -42,6 +42,7 @@ check_needs() {
     log "Installing necessary packages..."
     packages=("python3" "python3-venv" "curl" "git")
     for package in "${packages[@]}"; do
+        log "checking $package..."
         if ! dpkg -s "$package" >/dev/null 2>&1; then
             if ! sudo apt-get install -y "$package"; then
                 error "Failed to install $package."
@@ -227,8 +228,7 @@ uninstall_bot() {
 
     # Stop the bot process
     log "Stopping the bot process..."
-    pkill -f "$py_address"
-    sleep 2
+    sudo pkill -f "$py_address"
 
     # Remove virtual environment
     if [ -d "$venv_name" ]; then
