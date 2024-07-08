@@ -7,7 +7,7 @@ py_address="/root/sqlar/sqlar.py"
 env_address="/root/sqlar/.env"
 venv_name="sqlar"
 marzban_env_file="/opt/marzban/.env"
-version="1.1.2"
+version="1.1.3"
 
 # Define colors and Helper functions for colored messages
 colors=( "\033[1;31m" "\033[1;35m" "\033[1;92m" "\033[38;5;46m" "\033[1;38;5;208m" "\033[1;36m" "\033[0m" )
@@ -228,7 +228,8 @@ uninstall_bot() {
 
     # Stop the bot process
     log "Stopping the bot process..."
-    sudo pkill -f "$py_address"
+    sudo pkill -SIGTERM -f "$py_address"
+    sleep 2
 
     # Remove virtual environment
     if [ -d "$venv_name" ]; then
