@@ -1,8 +1,14 @@
 #!/bin/bash
 
+# Global variables
 git_address="https://github.com/iamrigo/sqlar.git"
-dir_address="/home/sqlar"
-version="1.1.0"
+dir_address="/root/sqlar"
+py_address="/root/sqlar/sqlar.py"
+env_address="/root/sqlar/.env"
+venv_name="sqlar"
+marzban_env_file="/opt/marzban/.env"
+version="1.1.1"
+
 # Define colors and Helper functions for colored messages
 colors=( "\033[1;31m" "\033[1;35m" "\033[1;92m" "\033[38;5;46m" "\033[1;38;5;208m" "\033[1;36m" "\033[0m" )
 red=${colors[0]} pink=${colors[1]} green=${colors[2]} spring=${colors[3]} orange=${colors[4]} cyan=${colors[5]} reset=${colors[6]}
@@ -27,31 +33,22 @@ check_needs() {
 
     # Update the system
     log "Updating the system..."
-    sudo apt-get update -y
-    if [ $? -ne 0 ]; then
+    if ! sudo apt-get update -y; then
         error "Failed to update the system."
         exit 1
     fi
 
-    # Install Python if not already installed
-    if ! command -v python3 &>/dev/null; then
-        log "Installing Python..."
-        sudo apt-get install -y python3
-        if [ $? -ne 0 ]; then
-            error "Failed to install Python."
-            exit 1
+    # Install necessary packages
+    log "Installing necessary packages..."
+    packages=("python3" "python3-venv" "curl" "git")
+    for package in "${packages[@]}"; do
+        if ! dpkg -s "$package" >/dev/null 2>&1; then
+            if ! sudo apt-get install -y "$package"; then
+                error "Failed to install $package."
+                exit 1
+            fi
         fi
-    fi
-
-    # Install curl if not already installed
-    if ! command -v curl &>/dev/null; then
-        log "Installing curl..."
-        sudo apt-get install -y curl
-        if [ $? -ne 0 ]; then
-            error "Failed to install curl."
-            exit 1
-        fi
-    fi
+    done
     success "System updated and required packages installed."
 }
 
@@ -85,9 +82,14 @@ install_bot() {
 }
 
 get_db_address() {
-    local env_file="/opt/marzban/.env"
-    db_url=$(grep -E "^[[:space:]]*SQLALCHEMY_DATABASE_URL[[:space:]]*=" "$env_file" | sed -E 's/^[[:space:]]*SQLALCHEMY_DATABASE_URL[[:space:]]*=[[:space:]]*//' | sed -e 's/^[[:space:]]*"//' -e 's/"[[:space:]]*$//')
+    if [ ! -f "$marzban_env_file" ]; then
+        error "Marzban .env file not found at $marzban_env_file"
+        exit 1
+    fi
+    db_url=$(grep -E "^[[:space:]]*SQLALCHEMY_DATABASE_URL[[:space:]]*=" "$marzban_env_file" | sed -E 's/^[[:space:]]*SQLALCHEMY_DATABASE_URL[[:space:]]*=[[:space:]]*//' | sed -e 's/^[[:space:]]*"//' -e 's/"[[:space:]]*$//')
     if [ -n "$db_url" ]; then
+        db_url=$(echo "$db_url" | sed 's/mysql+pymysql/mysql+aiomysql/')
+        db_url=$(echo "$db_url" | sed 's/sqlite:\/\//sqlite+aiosqlite:\/\//')        
         success "Your db address: $db_url"
     else
         error "SQLALCHEMY_DATABASE_URL not found or is commented out."
@@ -138,16 +140,30 @@ get_language() {
 }
 
 complete_install() {
+    log "Starting installation process..."
+
+    # First, uninstall any existing installation
+    log "Checking for existing installation..."
+    uninstall_bot
+
+    # Download the project from GitHub
     log "Downloading the project from GitHub..."
-    git clone $git_address $dir_address
-    if [ $? -ne 0 ]; then
-        error "Failed to clone the repository."
+    if [ -d "$dir_address" ]; then
+        log "Removing existing project directory..."
+        if ! rm -rf "$dir_address"; then
+            error "Failed to remove existing project directory. Please check permissions."
+            exit 1
+        fi
+    fi
+    if ! git clone "$git_address" "$dir_address"; then
+        error "Failed to clone the repository. Please check your internet connection and the repository URL."
         exit 1
     fi
     success "Project downloaded successfully."
 
+    # Create .env file
     log "Creating .env file..."
-    cat > $dir_address/.env << EOL
+    cat > "$env_address" << EOL
 ## soqaler bot settings
 # bot settings
 bot_token = "$token"
@@ -157,64 +173,110 @@ language = "$language"
 # db settings
 db_address = "$db_url"
 EOL
+    if [ $? -ne 0 ]; then
+        error "Failed to create .env file. Please check permissions."
+        exit 1
+    fi
     success ".env file created successfully."
 
+    # Set up virtual environment
     log "Setting up virtual environment..."
-    if [ ! -d "sqlar" ]; then
-        python3 -m venv sqlar
+    if [ ! -d "$venv_name" ]; then
+        if ! python3 -m venv "$venv_name"; then
+            error "Failed to create virtual environment. Please check your Python installation."
+            exit 1
+        fi
     fi
-    source sqlar/bin/activate
-    pip install -r $dir_address/requirements.txt
-    success "Virtual environment 'sqlar' created and dependencies installed."
+    source "$venv_name/bin/activate"
+    if ! pip install -r "$dir_address/requirements.txt"; then
+        error "Failed to install dependencies. Please check your internet connection and the requirements.txt file."
+        exit 1
+    fi
+    success "Virtual environment '$venv_name' created and dependencies installed."
 
-    log "Starting the bot..."
-    chmod +x $dir_address/sqlar.py 
-    nohup python3 $dir_address/sqlar.py 
-    if ps aux | grep -v grep | grep "$dir_address/sqlar.py" > /dev/null; then
-        success "Bot is running."
-    else
-        error "Bot is not running."
+    # Set executable permissions
+    log "Setting executable permissions..."
+    if ! chmod +x "$py_address"; then
+        error "Failed to set executable permissions on $py_address. Please check file permissions."
         exit 1
     fi
 
-    log "Setting up cron job..."
-    (crontab -l 2>/dev/null; echo "@reboot python3 $dir_address/sqlar.py") | crontab -
+    # Start the bot using nohup
+    log "Starting the bot..."
+    nohup "$venv_name/bin/python3" "$py_address" > /dev/null 2>&1 &
     if [ $? -ne 0 ]; then
-        error "Failed to set up cron job."
+        error "Failed to start the bot. Please check the logs."
+        exit 1
+    fi
+    success "Bot started successfully."
+
+    # Set up cron job
+    log "Setting up cron job..."
+    if ! (crontab -l 2>/dev/null; echo "@reboot cd $dir_address && $venv_name/bin/python3 $py_address > /dev/null 2>&1 &") | crontab -; then
+        error "Failed to set up cron job. Please check your crontab."
         exit 1
     fi
     success "Cron job set up successfully."
+
+    success "Installation completed successfully!"
+    log "The bot is now running in the background. You can check its status using 'ps aux | grep python'"
 }
 
-
 uninstall_bot() {
-    log "Uninstalling the bot..."
+    log "Starting uninstallation of the bot..."
 
-    deactivate 2>/dev/null
+    # Stop the bot process
+    log "Stopping the bot process..."
+    pkill -f "$py_address"
+    sleep 2
 
-    processes=("python3 /home/sqlar.py")
-    for proc in "${processes[@]}"; do
-        if pgrep -f "$proc" &> /dev/null; then
-            proc_name=$(echo "$proc" | cut -d ' ' -f 2)
-            echo -e "Stopping existing $proc_name process...\n"
-            pkill -fx "$proc"
+    # Remove virtual environment
+    if [ -d "$venv_name" ]; then
+        log "Removing virtual environment..."
+        if ! rm -rf "$venv_name"; then
+            error "Failed to remove virtual environment. Continuing with uninstallation."
+        else
+            success "Virtual environment '$venv_name' removed."
         fi
-    done
-
-    if [ -d "sqlar" ]; then
-        rm -rf sqlar
-        success "Virtual environment 'sqlar' removed."
     fi
 
-    (crontab -l 2>/dev/null | grep -v "$dir_address/sqlar.py") | crontab -
-    success "Cron job removed."
+    # Remove cron job
+    log "Removing cron job..."
+    if crontab -l 2>/dev/null | grep -q "$py_address"; then
+        (crontab -l 2>/dev/null | grep -v "$py_address") | crontab -
+        success "Cron job removed."
+    else
+        log "No cron job found for the bot."
+    fi
 
+    # Remove project directory
     if [ -d "$dir_address" ]; then
-        rm -rf /home/sqlar
-        success "Cloned project directory removed."
+        log "Removing project directory..."
+        if ! rm -rf "$dir_address"; then
+            error "Failed to remove project directory. Please check and remove manually: $dir_address"
+        else
+            success "Project directory removed: $dir_address"
+        fi
+    else
+        log "Project directory not found: $dir_address"
     fi
+
+    # Remove .env file if it exists separately
+    if [ -f "$env_address" ] && [ "$env_address" != "$dir_address/.env" ]; then
+        log "Removing .env file..."
+        if ! rm -f "$env_address"; then
+            error "Failed to remove .env file. Please check and remove manually: $env_address"
+        else
+            success ".env file removed: $env_address"
+        fi
+    fi
+
+    # Final cleanup
+    log "Performing final cleanup..."
+    # Add any additional cleanup steps here if needed
 
     success "Bot uninstallation completed successfully!"
+    log "If you encountered any errors during uninstallation, please check and remove any remaining files manually."
 }
 
 run() {
