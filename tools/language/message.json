@@ -1,20 +1,20 @@
 {
     "EN": {
-        "START": "Hi, welcome to sqlar.",
-        "BLOCK": "You can't use bot.",
-        "SUCCESS_NO_MESSAGE": "Query executed successfully, no results to show.",
-        "ERROR": "An error occurred:"
+        "START": "Welcome to Sqlar!\nPlease read the Marzban documentation first.",
+        "BLOCK": "Unfortunately, you do not have permission to use this bot.",
+        "SUCCESS_NO_MESSAGE": "The command was successfully executed. There are no results to display.",
+        "ERROR": "System message:"
     },
     "PR": {
-        "START": "درود، به اسکولار خوش آمدید.",
-        "BLOCK": "شما نمیتوانید از ربات استفاده کنید.",
-        "SUCCESS_NO_MESSAGE": "دستور با موفقیت اجرا شد.\nچیزی برای نمایش نداریم.",
-        "ERROR": "یه اروری داریم:"
+        "START": "به اسکولار خوش آمدید!\nلطفا ابتدا داکیومنت مرزبان را مطالعه کنید.",
+        "BLOCK": "متأسفانه شما اجازه استفاده از این ربات را ندارید.",
+        "SUCCESS_NO_MESSAGE": "دستور با موفقیت اجرا شد. نتیجه‌ای برای نمایش وجود ندارد.",
+        "ERROR": "پیام سیستم:"
     },
     "RU": {
-        "START": "Привет, добро пожаловать в sqlar.",
-        "BLOCK": "Вы не можете использовать бота.",
-        "SUCCESS_NO_MESSAGE": "Запрос успешно выполнен, нет результатов для отображения.",
-        "ERROR": "Произошла ошибка:"
+        "START": "Добро пожаловать в Sqlar!\nПожалуйста, сначала прочтите документацию Marzban.",
+        "BLOCK": "К сожалению, у вас нет разрешения на использование этого бота.",
+        "SUCCESS_NO_MESSAGE": "Команда успешно выполнена. Нет результатов для отображения.",
+        "ERROR": "Системное сообщение:"
     }
 }
