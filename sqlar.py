@@ -1,6 +1,7 @@
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import CommandStart, Command
 from aiogram.enums import ParseMode
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 
 from tools.language.handler import MESSAGE
 from tools.db import db
@@ -12,8 +13,15 @@ dp = Dispatcher()
 @dp.message(CommandStart())
 @dp.message(Command("help"))
 async def send_welcome(message: types.Message, bot: Bot):
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(
+            text="Marzban Documentation", 
+            web_app=WebAppInfo(url="https://gozargah.github.io/marzban/fa/examples/mysql-queries")
+        )]
+    ])
+
     if message.chat.id == int(ADMIN_CHATID):
-        await message.reply(await MESSAGE('START'))
+        await message.reply(await MESSAGE('START'), reply_markup=keyboard)
     else:
         await message.reply(await MESSAGE('BLOCK'))
 
