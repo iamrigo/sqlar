@@ -7,7 +7,7 @@ py_address="/root/sqlar/sqlar.py"
 env_address="/root/sqlar/.env"
 venv_name="/root/sqlar/sqlar_venv"
 marzban_env_file="/opt/marzban/.env"
-version="1.1.4"
+version="1.1.5"
 
 # Define colors and Helper functions for colored messages
 colors=( "\033[1;31m" "\033[1;35m" "\033[1;92m" "\033[38;5;46m" "\033[1;38;5;208m" "\033[1;36m" "\033[0m" )
@@ -228,15 +228,23 @@ uninstall_bot() {
 
     # Stop the bot process
     log "Checking if the bot process is running..."
-    if pgrep -f "$py_address" > /dev/null; then
-        log "Bot process found. Attempting to stop it..."
+    bot_pid=$(pgrep -f "$py_address")
+    if [ -n "$bot_pid" ]; then
+        log "Bot process found (PID: $bot_pid). Attempting to stop it..."
         
         # Attempt to stop the process
-        pkill -f "$py_address"
-        sleep 2
+        kill $bot_pid
+        log "Waiting for process to stop..."
+        sleep 5
         
         # Check if the process was stopped
-        if pgrep -f "$py_address" > /dev/null; then
+        if kill -0 $bot_pid 2>/dev/null; then
+            error "Failed to stop the bot process. Attempting force stop..."
+            kill -9 $bot_pid
+            sleep 2
+        fi
+        
+        if kill -0 $bot_pid 2>/dev/null; then
             error "Failed to stop the bot process. It may require manual intervention."
         else
             success "Bot process stopped successfully."
@@ -244,6 +252,8 @@ uninstall_bot() {
     else
         log "Bot process is not running."
     fi
+
+    log "Continuing with uninstallation..."
 
     # Remove virtual environment
     if [ -d "$venv_name" ]; then
@@ -286,10 +296,7 @@ uninstall_bot() {
         fi
     fi
 
-    # Final cleanup
-    log "Performing final cleanup..."
-    # Add any additional cleanup steps here if needed
-
+    log "Uninstallation process completed."
     success "Bot uninstallation completed successfully!"
     log "If you encountered any errors during uninstallation, please check and remove any remaining files manually."
 }
