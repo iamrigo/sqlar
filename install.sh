@@ -5,9 +5,9 @@ git_address="https://github.com/iamrigo/sqlar.git"
 dir_address="/root/sqlar"
 py_address="/root/sqlar/sqlar.py"
 env_address="/root/sqlar/.env"
-venv_name="sqlar"
+venv_name="/root/sqlar/sqlar_venv"
 marzban_env_file="/opt/marzban/.env"
-version="1.1.3"
+version="1.1.4"
 
 # Define colors and Helper functions for colored messages
 colors=( "\033[1;31m" "\033[1;35m" "\033[1;92m" "\033[38;5;46m" "\033[1;38;5;208m" "\033[1;36m" "\033[0m" )
@@ -33,7 +33,7 @@ check_needs() {
 
     # Update the system
     log "Updating the system..."
-    if ! sudo apt-get update -y; then
+    if ! apt-get update -y; then
         error "Failed to update the system."
         exit 1
     fi
@@ -42,9 +42,9 @@ check_needs() {
     log "Installing necessary packages..."
     packages=("python3" "python3-venv" "curl" "git")
     for package in "${packages[@]}"; do
-        log "checking $package..."
+        log "Checking $package..."
         if ! dpkg -s "$package" >/dev/null 2>&1; then
-            if ! sudo apt-get install -y "$package"; then
+            if ! apt-get install -y "$package"; then
                 error "Failed to install $package."
                 exit 1
             fi
@@ -204,7 +204,7 @@ EOL
 
     # Start the bot using nohup
     log "Starting the bot..."
-    nohup "$venv_name/bin/python3" "$py_address" > /dev/null 2>&1 &
+    nohup "$venv_name/bin/python3" "$py_address" > "$dir_address/bot.log" 2>&1 &
     if [ $? -ne 0 ]; then
         error "Failed to start the bot. Please check the logs."
         exit 1
@@ -213,7 +213,7 @@ EOL
 
     # Set up cron job
     log "Setting up cron job..."
-    if ! (crontab -l 2>/dev/null; echo "@reboot cd $dir_address && $venv_name/bin/python3 $py_address > /dev/null 2>&1 &") | crontab -; then
+    if ! (crontab -l 2>/dev/null; echo "@reboot cd $dir_address && $venv_name/bin/python3 $py_address > $dir_address/bot.log 2>&1 &") | crontab -; then
         error "Failed to set up cron job. Please check your crontab."
         exit 1
     fi
@@ -227,9 +227,23 @@ uninstall_bot() {
     log "Starting uninstallation of the bot..."
 
     # Stop the bot process
-    log "Stopping the bot process..."
-    sudo pkill -SIGTERM -f "$py_address"
-    sleep 2
+    log "Checking if the bot process is running..."
+    if pgrep -f "$py_address" > /dev/null; then
+        log "Bot process found. Attempting to stop it..."
+        
+        # Attempt to stop the process
+        pkill -f "$py_address"
+        sleep 2
+        
+        # Check if the process was stopped
+        if pgrep -f "$py_address" > /dev/null; then
+            error "Failed to stop the bot process. It may require manual intervention."
+        else
+            success "Bot process stopped successfully."
+        fi
+    else
+        log "Bot process is not running."
+    fi
 
     # Remove virtual environment
     if [ -d "$venv_name" ]; then
@@ -285,3 +299,4 @@ run() {
 }
 
 run
+
